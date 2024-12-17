@@ -1,41 +1,35 @@
-import requests
-import json
-import traceback
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
 
-def sendEmail(report_file,subject,receiver):
-    """
-    发送邮件报告
-    para:
-    receiver:接收邮件list
-    report_file:报告的路径
-    """
+def send_email(from_addr, password, to_addr, smtp_server, subject, html_msg):
+    msg = MIMEMultipart()#整合邮件头、正文和附件等信息
+    msg['From'] = from_addr
+    msg['To'] = to_addr
+    msg['Subject'] = Header(subject, 'utf-8')
+    msg.attach(MIMEText(html_msg,'html', 'utf-8'))
     try:
-        receiver_list = []
-        receiver = receiver.split(',')
-        for i in receiver:
-            if '@qq.com' not in i:
-                receiver_list.append(i+'@qq.com')
-        print(receiver_list)
-        carbonCopy_list = ['3178413043@qq.com']
-        html_content = open(report_file, 'rb').read()
-        subject = subject
-        receiver_list = ', '.join(receiver_list)
-        carbonCopy_list = ', '.join(carbonCopy_list)
+        smtpobj = smtplib.SMTP_SSL(smtp_server)
+        smtpobj.connect(smtp_server, 465)
+        smtpobj.login(from_addr, password)
+        smtpobj.sendmail(from_addr, to_addr, msg.as_string())
+        print("邮件发送成功")
+    except smtplib.SMTPException as e:
+        print("无法发送邮件:", e)
+    finally:
+        if 'smtpobj' in locals():
+            smtpobj.quit()
 
-        body = {
-            "token": "",
-            "subject": subject,
-            "tos": receiver_list,
-            "content": html_content,
-            "html": True,
-            "ccs": carbonCopy_list
-        }
-        files = {'attachFiles': ('report.html', html_content)}
-        send = requests.post('', data=body, files=files)
-        print(json.dumps(send.json(), ensure_ascii=False, indent=4))
-        print("Send successfully.")
-
-    except:
-        traceback.print_exc()
-if __name__ == '__main__':
-    sendEmail(r"D:\PythonProject\uiAuto\report\report.html",'测试报告','3178413043@qq.com')
+# 发信方的信息：发信邮箱，QQ 邮箱授权码
+from_addr = '3178413043@qq.com'
+password = 'zcjubwmfszmwdgec'  # 授权码，非登录密码
+# 发信服务器
+smtp_server = 'smtp.qq.com'
+# 邮件内容
+subject = 'report'
+with open(r"D:\PythonProject\uiAuto\report\20241111095049report.html",'r',encoding='utf-8') as f:
+    html_msg = f.read()
+# 调用函数发送邮件，这里to_addr是接收方的邮箱地址，可以根据需要修改
+to_addr = '1518236303@qq.com'
+send_email(from_addr, password, to_addr, smtp_server, subject, html_msg)
